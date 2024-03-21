@@ -60,3 +60,81 @@ def add_marks():
         })
     finally:
         db.session.close()
+
+
+@add_marks_bp.route('/saveDS', methods=['POST'])
+def save_as_datasets():
+    # 整理前端数据
+    table_name = request.get_json()['table_name']
+    sensors = request.get_json()['sensors']
+    gateways = request.get_json()['gateways']
+    crossings = request.get_json()['crossings']
+
+    try:
+        # 创建数据表
+        db.session.execute(text(
+            'CREATE TABLE `road-mark`.`c_' + table_name + '_sensors`  (\
+            `id` int NOT NULL AUTO_INCREMENT,\
+            `lng` varchar(60) NULL DEFAULT NULL,\
+            `lat` varchar(60) NULL DEFAULT NULL,\
+            `group` int NULL DEFAULT NULL,\
+            `group_number` int NULL DEFAULT NULL,\
+            PRIMARY KEY (`id`))'))
+
+        db.session.execute(text(
+            'CREATE TABLE `road-mark`.`c_' + table_name + '_gateways`  (\
+            `id` int NOT NULL AUTO_INCREMENT,\
+            `lng` varchar(60) NULL DEFAULT NULL,\
+            `lat` varchar(60) NULL DEFAULT NULL,\
+            `group` int NULL DEFAULT NULL,\
+            `group_number` int NULL DEFAULT NULL,\
+            PRIMARY KEY (`id`))'))
+
+        db.session.execute(text(
+            'CREATE TABLE `road-mark`.`c_' + table_name + '_crossings`  (\
+            `id` int NOT NULL AUTO_INCREMENT,\
+            `lng` varchar(60) NULL DEFAULT NULL,\
+            `lat` varchar(60) NULL DEFAULT NULL,\
+            PRIMARY KEY (`id`))'))
+
+    except Exception:
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'code': HTTP_ERROR_OPERATION,
+            'msg': '数据库中有同名数据表，请修改名称！',
+            'data': None,
+        })
+
+
+    try:
+        # 传感器存入
+        for index, group in enumerate(sensors):
+            for i, s in enumerate(group):
+                db.session.add(Sensors(lng=s['lng'], lat=s['lat'], group=index + 1, group_number=i + 1))
+        # 网关存入
+        for index, group in enumerate(gateways):
+            for i, s in enumerate(group):
+                db.session.add(Gateways(lng=s['lng'], lat=s['lat'], group=index + 1, group_number=i + 1))
+        # 路口存入
+        for c in crossings:
+            db.session.add(Crossings(lng=c['lng'], lat=c['lat']))
+
+        # 提交事务
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'code': HTTP_SUCCESS,
+            'msg': '保存成功！',
+            'data': None,
+        })
+    except Exception:
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'code': HTTP_ERROR_OPERATION,
+            'msg': '数据库错误！',
+            'data': None,
+        })
+    finally:
+        db.session.close()
