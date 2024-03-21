@@ -1,3 +1,4 @@
+from extensions import app
 
 
 @app.route('/')
