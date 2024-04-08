@@ -5,6 +5,7 @@ from sqlalchemy import text, Table, Column, Integer, String, inspect
 
 from extensions import db
 from models.crossings import Crossings
+from models.datasets import Datasets
 from models.gateways import Gateways
 from models.sensors import Sensors
 from utils.status_code import *
@@ -66,6 +67,7 @@ def add_marks():
 def save_as_datasets():
     # 整理前端数据
     table_name = request.get_json()['table_name']
+    remark = request.get_json()['remark']
     sensors = request.get_json()['sensors']
     gateways = request.get_json()['gateways']
     crossings = request.get_json()['crossings']
@@ -128,6 +130,9 @@ def save_as_datasets():
         # 路口存入
         for c in crossings:
             db.session.execute(dynamic_table3.insert().values(lng=c['lng'], lat=c['lat']))
+
+        # 表名存入
+        db.session.add(Datasets(table_name="c_" + table_name, table_remark=remark))
 
         # 提交事务
         db.session.commit()

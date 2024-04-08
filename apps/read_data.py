@@ -1,10 +1,11 @@
 import traceback
 
 from flask import Blueprint, jsonify, request
-from sqlalchemy import text
+from sqlalchemy import Table, MetaData
 
 from extensions import db
 from models.crossings import Crossings
+from models.datasets import Datasets
 from models.gateways import Gateways
 from models.sensors import Sensors
 from utils.status_code import *
@@ -13,37 +14,15 @@ read_data_bp = Blueprint('read_data', __name__)
 
 
 @read_data_bp.route('/loadDatasets', methods=["GET"])
-def add_marks():
-    # 整理前端数据
-    sensors = request.get_json()['sensors']
-    gateways = request.get_json()['gateways']
-    crossings = request.get_json()['crossings']
-
-    # 先截断表
-    db.session.execute(text('TRUNCATE TABLE sensors'))
-    db.session.execute(text('TRUNCATE TABLE gateways'))
-    db.session.execute(text('TRUNCATE TABLE crossings'))
-
+def load_datasets_list():
     try:
-        # 传感器存入
-        for index, group in enumerate(sensors):
-            for i, s in enumerate(group):
-                db.session.add(Sensors(lng=s['lng'], lat=s['lat'], group=index + 1, group_number=i + 1))
-        # 网关存入
-        for index, group in enumerate(gateways):
-            for i, s in enumerate(group):
-                db.session.add(Gateways(lng=s['lng'], lat=s['lat'], group=index + 1, group_number=i + 1))
-        # 路口存入
-        for c in crossings:
-            db.session.add(Crossings(lng=c['lng'], lat=c['lat']))
-
-        # 提交事务
-        db.session.commit()
+        lists = db.session.query(Datasets).all()
+        lists = [li.asdict() for li in lists]
         return jsonify({
             'success': True,
             'code': HTTP_SUCCESS,
-            'msg': '保存成功！',
-            'data': None,
+            'msg': '查询成功！',
+            'data': lists,
         })
     except Exception:
         traceback.print_exc()
@@ -56,3 +35,61 @@ def add_marks():
     finally:
         db.session.close()
 
+
+@read_data_bp.route('/loadData', methods=["GET"])
+def load_data():
+    metadata = MetaData()
+    name = request.args.get('table_name')
+    try:
+        if name == 'default':
+            result = db.session.query(Sensors).all()
+            sensors = [li.asdict() for li in result]
+            result = db.session.query(Gateways).all()
+            gateways = [li.asdict() for li in result]
+            result = db.session.query(Crossings).all()
+            crossings = [li.asdict() for li in result]
+        else:
+            # 查询传感器
+            sensor_table = Table(name + "_sensors", metadata, autoload_with=db.engine)
+            result = db.session.query(sensor_table).all()
+            sensors = []
+            for row in result:
+                data = {column.name: getattr(row, column.name) for column in sensor_table.columns}
+                sensors.append(data)
+
+            # 查询网关
+            gateway_table = Table(name + "_gateways", metadata, autoload_with=db.engine)
+            result = db.session.query(gateway_table).all()
+            gateways = []
+            for row in result:
+                data = {column.name: getattr(row, column.name) for column in gateway_table.columns}
+                gateways.append(data)
+
+            # 查询路口
+            crossing_table = Table(name + "_crossings", metadata, autoload_with=db.engine)
+            result = db.session.query(crossing_table).all()
+            crossings = []
+            for row in result:
+                data = {column.name: getattr(row, column.name) for column in crossing_table.columns}
+                crossings.append(data)
+        return jsonify({
+            'success': True,
+            'code': HTTP_SUCCESS,
+            'msg': '查询成功！',
+            'data': {
+                'sensors': sensors,
+                'gateways': gateways,
+                'crossings': crossings,
+            },
+        })
+
+    except Exception:
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'code': HTTP_ERROR_OPERATION,
+            'msg': '数据库错误！',
+            'data': None,
+        })
+    finally:
+        db.session.close()
