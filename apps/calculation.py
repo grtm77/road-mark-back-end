@@ -3,6 +3,7 @@ import traceback
 from flask import Blueprint, jsonify, request
 from sqlalchemy import text, Table, Column, Integer, String, inspect
 
+from calculation.general import getData, create_matrix
 from extensions import db
 from models.crossings import Crossings
 from models.datasets import Datasets
@@ -13,10 +14,10 @@ from utils.status_code import *
 calc_bp = Blueprint('calculation', __name__)
 
 
-@calc_bp.route('/calc', method=['GET'])
+@calc_bp.route('/calc', methods=['GET'])
 def calc():
-    name = request.args.get('name')
-    algorithm = request.args.get('algorithm')
+    name = request.args.get('table_name')
+    algorithm = int(request.args.get('algorithm'))
     if not db.session.query(Datasets).filter_by(table_name=name).first():
         return jsonify({
             'success': False,
@@ -31,8 +32,22 @@ def calc():
             'msg': '您还未选择算法！',
             'data': None,
         })
-    elif algorithm == 1:
-        pass
+    elif algorithm == 3:
+        data = getData(name)
+        status, info = create_matrix(data)
+        if status == 0:
+            return jsonify({
+                'success': True,
+                'code': HTTP_SUCCESS,
+                'msg': '计算成功！',
+                'data': None,
+            })
+        return jsonify({
+            'success': False,
+            'code': HTTP_ERROR_OPERATION,
+            'msg': info,
+            'data': None,
+        })
     else:
         return jsonify({
             'success': False,
