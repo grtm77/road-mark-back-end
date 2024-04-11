@@ -108,7 +108,7 @@ def create_matrix(d):
         for it in c[2]:
             matrix[it[0]][i] = 1
 
-    for row in matrix:
-        print(' '.join(map(str, row)))
-    return 0, None
+    # for row in matrix:
+    #     print(' '.join(map(str, row)))
+    return 0, matrix
 
