@@ -52,13 +52,20 @@ def calc():
         })
 
     # 如果数据合法，则计算
-    print(calc_lin_prog(matrix))
+    rs_list = calc_lin_prog(matrix)
+    rt_g = []
+    for i, g in enumerate(rs_list):
+        if g[0] == 1:
+            rt_g.append({'lng': data['gateways'][i]['lng'], 'lat': data['gateways'][i]['lat']})
 
     return jsonify({
         'success': True,
         'code': HTTP_SUCCESS,
         'msg': '计算成功！',
-        'data': None,
+        'data': {
+            'sensors': data['sensors'],
+            'gateways': rt_g
+        },
     })
 
 

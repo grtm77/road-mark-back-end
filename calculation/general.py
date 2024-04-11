@@ -100,7 +100,7 @@ def create_matrix(d):
     # print(s)
     cover, be_covered_set = calc_covered(s, g)
     if len(all_set) != len(be_covered_set):
-        return 444, '传感器没有被全部覆盖到！'
+        return 444, '传感器没有被全部覆盖到！', None
 
 #     如果全部覆盖
     matrix = [[0 for _ in range(len(g))] for _ in range(len(s))]
@@ -110,5 +110,5 @@ def create_matrix(d):
 
     # for row in matrix:
     #     print(' '.join(map(str, row)))
-    return 0, matrix
+    return 0, matrix,
 
