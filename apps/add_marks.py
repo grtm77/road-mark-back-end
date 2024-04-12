@@ -1,3 +1,4 @@
+import datetime
 import traceback
 
 from flask import Blueprint, jsonify, request
@@ -132,7 +133,7 @@ def save_as_datasets():
             db.session.execute(dynamic_table3.insert().values(lng=c['lng'], lat=c['lat']))
 
         # 表名存入
-        db.session.add(Datasets(table_name="c_" + table_name, table_remark=remark))
+        db.session.add(Datasets(table_name="c_" + table_name, table_remark=remark, created_at=datetime.datetime.now()))
 
         # 提交事务
         db.session.commit()
